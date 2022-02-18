@@ -1,0 +1,132 @@
+﻿@using TimeTracking.Models
+@using TimeTracking.Library
+@model TimeTable
+
+@inject Microsoft.Extensions.Localization.IStringLocalizer<Resource> localizer
+
+@{
+    Project project = ViewBag.Project;
+    List<TimeTable> timeTables = ViewBag.TimeTables;
+    AspNetUser user = ViewBag.User;
+}
+<div class="row" style="margin-bottom: 30px;">
+    <div class="col-sm-12">
+        <h2>@project.ProjectName - @localizer["LoggedTime"]</h2>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-sm-12">
+
+        @using (Html.BeginRouteForm("timetable-projects", new { ProjectId = project.Id }, FormMethod.Post, true, new { @class = "form-inline" }))
+        {
+        <div class="form-group col-sm-8">
+            <div class="input-group mb-2 mr-sm-2">
+                <div class="input-group-prepend">
+                    <div class="input-group-text">@localizer["Date"]</div>
+                </div>
+                <input type="date" name="WorkDate" class="form-control">
+            </div>
+            <div class="input-group mb-2 mr-sm-2">
+                <div class="input-group-prepend">
+                    <div class="input-group-text">@localizer["TimeMin"]</div>
+                </div>
+                <input type="number" name="WorkTime" class="form-control" min="15" step="5" style="width: 100px;">
+            </div>
+            <div class="input-group mb-2 mr-sm-2">
+                <input type="submit" class="btn btn-outline-dark" value="@localizer["BtnSave"]" />
+            </div>
+            <div class="input-group mb-2 mr-sm-2">
+                <a href="/projekti/@project.Id.ToString()/download" class="btn btn-outline-danger">
+                    @localizer["BtnPDF"]
+                </a>
+            </div>
+        </div>
+        }
+    </div>
+</div>
+
+<div class="col-sm-12">
+    @if (TempData["Message"] != null)
+    {
+        <div class="alert alert-success" role="alert">@TempData["Message"].ToString()</div>
+    }
+    @if (TempData["Errors"] != null)
+    {
+        <div class="alert alert-danger" role="alert">@Html.Raw(TempData["Errors"])</div>
+    }
+    @if (timeTables.Count() == 0)
+    {
+        <div class="alert alert-info" role="alert">@localizer["NoRecords"]</div>
+    }
+    else
+    {
+        <table class="table table-sm table-hover">
+            <thead>
+                <tr class="bg-danger text-white">
+                    <th class="text-center" style="width: 30px;">#</th>
+                    <th>@localizer["User"]</th>
+                    <th>@localizer["WorkDate"]</th>
+                    <th>@localizer["WorkTime"]</th>
+                    <th></th>
+                </tr>
+            </thead>
+            <tbody>
+                @{
+                    int counter = 1;
+                    int timeSum = 0;
+                    string userName = "";
+                }
+                @foreach (TimeTable timeTable in timeTables)
+                {
+                    @if (!string.IsNullOrEmpty(userName) && userName != timeTable.UserName)
+                    {
+                        <tr style="background-color: #d7d7d7;">
+                            <td></td>
+                            <td></td>
+                            <td class="text-right">@localizer["Total"]</td>
+                            <td class="font-weight-bold">@timeSum | @TimeTableHelper.GetTimeInHours(timeSum)</td>
+                            <td></td>
+                        </tr>
+                        <tr>
+                            <td>@counter.</td>
+                            <td>@timeTable.UserName</td>
+                            <td>@timeTable.WorkDate.ToShortDateString()</td>
+                            <td>@timeTable.WorkTime.ToString()</td>
+                            <td>
+                                <a href="/timetable/delete/@timeTable.Id.ToString()" class="btn btn-sm btn-danger" onclick="return confirm('@localizer["AreYouSure"]');">@localizer["ActionDelete"]</a>
+                            </td>
+                        </tr>
+                        timeSum = timeTable.WorkTime;
+                        userName = timeTable.UserName;
+                    }
+                    else
+                    {
+                        <tr>
+                            <td>@counter.</td>
+                            <td>@timeTable.UserName</td>
+                            <td>@timeTable.WorkDate.ToShortDateString()</td>
+                            <td>@timeTable.WorkTime.ToString()</td>
+                            <td>
+                                <a href="/timetable/delete/@timeTable.Id.ToString()" class="btn btn-sm btn-danger" onclick="return confirm('@localizer["AreYouSure"]');">@localizer["ActionDelete"]</a>
+                            </td>
+                        </tr>
+                        timeSum += timeTable.WorkTime;
+                        userName = timeTable.UserName;
+                        if (counter == timeTables.Count())
+                        {
+                            <tr style="background-color: #d7d7d7;">
+                                <td></td>
+                                <td></td>
+                                <td class="text-right">@localizer["Total"]</td>
+                                <td class="font-weight-bold">@timeSum | @TimeTableHelper.GetTimeInHours(timeSum)</td>
+                                <td></td>
+                            </tr>
+                        }
+                    }
+                    counter++;
+                }
+            </tbody>
+        </table>
+    }
+</div>

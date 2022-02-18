@@ -1,0 +1,134 @@
+﻿@using TimeTracking.Models
+@using TimeTracking.Library
+@model Project
+
+@inject Microsoft.Extensions.Localization.IStringLocalizer<Resource> localizer
+
+@{ 
+    List<Project> projects = ViewBag.Projects;
+    AspNetUser user = ViewBag.User;
+}
+<div class="row" style="margin-bottom: 30px;">
+    <div class="col-sm-12">
+        <h2>@localizer["Projects"]</h2>
+    </div>
+</div>
+
+<div class="row" ng-controller="projectsController">
+    <div class="col-sm-12">
+        @if (TempData["Message"] != null)
+        {
+            <div class="alert alert-success" role="alert">@TempData["Message"].ToString()</div>
+        }
+        @if (TempData["Errors"] != null)
+        {
+            <div class="alert alert-danger" role="alert">@Html.Raw(TempData["Errors"])</div>
+        }
+        @if (user.HasRole(AppConsts.ROLE_ADMIN))
+        {
+            <p>
+                <button type="button" class="btn btn-sm btn-outline-dark" data-toggle="modal" data-target="#projectModalAdd">
+                    @localizer["BtnAddProject"]
+                </button>
+            </p>
+        }
+        
+        @if (projects.Count() == 0)
+        {
+            <div class="alert alert-info" role="alert">@localizer["NoRecords"]</div>
+        }
+        else
+        {
+            <table class="table table-sm table-hover">
+                <thead>
+                    <tr class="bg-danger text-white">
+                        <th class="text-center" style="width: 30px;">#</th>
+                        <th>@localizer["ProjectName"]</th>
+                        <th></th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr ng-repeat="project in projects">
+                        <td class="text-center">{{ $index + 1 }}</td>
+                        <td>{{ project.ProjectName }}</td>
+                        <td style="width: 210px;">
+                            <a href="/projekti/{{ project.Id }}" class="btn btn-sm btn-light">@localizer["ActionShow"]</a>
+                            @if (user.HasRole(AppConsts.ROLE_ADMIN))
+                            {
+                                <a href="javascript:;" class="btn btn-sm btn-warning" ng-click="editInfo(project)">@localizer["ActionEdit"]</a>
+                                <a href="/projekti/delete/{{ project.Id }}" class="btn btn-sm btn-danger" onclick="return confirm('@localizer["AreYouSure"]');">@localizer["ActionDelete"]</a>
+                            }
+                        </td>
+                    </tr>
+                </tbody>
+            </table>
+        }
+    </div>
+    <form name="ProjectsFormAdd" action="/projekti" method="POST" enctype="multipart/form-data">
+        <div class="modal" tabindex="-1" role="dialog" id="projectModalAdd">
+            <div class="modal-dialog" role="document">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h5 class="modal-title">@localizer["AddProject"]</h5>
+                        <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                            <span aria-hidden="true">&times;</span>
+                        </button>
+                    </div>
+                    <div class="modal-body">
+                        <div class="col-sm-10 offset-sm-1">
+                            <div class="form-group row">
+                                <label class="col-form-label">@localizer["ProjectName"]</label>
+                                @Html.TextBox("ProjectName", null, new { @class = "form-control" })
+                            </div>
+                            <div class="form-group row">
+                                <label class="col-form-label">@localizer["ProjectDescription"]</label>
+                                @Html.TextArea("ProjectDescription", null, new { @class = "form-control" })
+                            </div>
+                        </div>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-sm btn-danger" data-dismiss="modal">@localizer["BtnCancel"]</button>
+                        <button type="submit" class="btn btn-sm btn-info">@localizer["BtnSave"]</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </form>
+
+    <form name="ProjectsFormEdit" action="/projekti/update" method="POST">
+        <input type="hidden" name="ProjectId" ng-value="currentProject.Id" />
+        <div class="modal" tabindex="-1" role="dialog" id="projectModalEdit">
+            <div class="modal-dialog" role="document">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h5 class="modal-title">@localizer["AddProject"]</h5>
+                        <button type="button" class="close" ng-click="closeEditModal()">
+                            <span aria-hidden="true">&times;</span>
+                        </button>
+                    </div>
+                    <div class="modal-body">
+                        <div class="col-sm-10 offset-sm-1">
+                            <div class="form-group row">
+                                <label class="col-form-label">@localizer["ProjectName"]</label>
+                                <input type="text" name="ProjectName" ng-model="currentProject.ProjectName" class="form-control" />
+                            </div>
+                            <div class="form-group row">
+                                <label class="col-form-label">@localizer["ProjectDescription"]</label>
+                                <textarea name="ProjectDescription" ng-model="currentProject.ProjectDescription" class="form-control"></textarea>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-sm btn-danger" ng-click="closeEditModal()">@localizer["BtnCancel"]</button>
+                        <button type="submit" class="btn btn-sm btn-info">@localizer["BtnSave"]</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </form>
+</div>
+
+<script type="application/json" id="projectsRecordsData">
+    @Html.Raw(System.Text.Json.JsonSerializer.Serialize(projects))
+</script>
+
